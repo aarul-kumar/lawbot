@@ -8,7 +8,7 @@ from langchain_community.vectorstores import FAISS
 PDFS_DIRECTORY = "pdfs/"
 FAISS_DB_PATH = "vectorstore/db_faiss"
 
-# Use HuggingFace embedding model (cloud-compatible)
+# HuggingFace embedding model
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
@@ -26,8 +26,7 @@ def upload_pdf(file):
 
 def load_pdf(file_path):
     loader = PDFPlumberLoader(file_path)
-    documents = loader.load()
-    return documents
+    return loader.load()
 
 
 def create_chunks(documents):
@@ -40,9 +39,7 @@ def create_chunks(documents):
 
 
 def get_embedding_model():
-    return HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL_NAME
-    )
+    return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
 
 
 def create_vector_store(text_chunks):

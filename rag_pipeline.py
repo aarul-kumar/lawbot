@@ -1,15 +1,19 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-#from langchain_groq import ChatGroq
-from langchain_ollama import ChatOllama
-
+from transformers import pipeline
+from langchain_community.llms import HuggingFacePipeline
 from langchain_core.prompts import ChatPromptTemplate
 from vector_database import load_vector_store
 
-# Groq LLM
-#llm_model = ChatGroq(model="llama-3.3-70b-versatile")
-llm_model = ChatOllama(model="deepseek-r1:1.5b")
+# Load lightweight HF model (works on Streamlit)
+pipe = pipeline(
+    "text2text-generation",
+    model="google/flan-t5-base",
+    max_new_tokens=256
+)
+
+llm_model = HuggingFacePipeline(pipeline=pipe)
 
 
 def retrieve_docs(query, k=3):
@@ -22,7 +26,7 @@ def get_context(documents):
 
 
 custom_prompt_template = """
-You are a helpful assistant.
+You are a helpful legal assistant.
 
 Use ONLY the information provided in the context below to answer the user's question.
 If the answer is not present in the context, say:
@@ -51,4 +55,4 @@ def answer_query(documents, model, query):
         "context": context
     })
 
-    return response.content
+    return response  # returns string
