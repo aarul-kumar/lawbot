@@ -10,7 +10,7 @@ from rag_pipeline import answer_query, retrieve_docs
 st.set_page_config(page_title="LawBot RAG", layout="wide")
 st.title("⚖️ LawBot - AI Legal Assistant")
 
-# ✅ Chat history memory
+# ✅ Chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -25,12 +25,12 @@ if uploaded_file:
         create_vector_store(chunks)
     st.success("✅ PDF processed successfully!")
 
-# ✅ Display chat history
+# ✅ Show chat history
 for chat in st.session_state.chat_history:
     st.chat_message("user").write(chat["user"])
     st.chat_message("assistant").write(chat["assistant"])
 
-# ✅ ChatGPT-style input
+# ✅ Chat input
 user_query = st.chat_input("Ask anything from the uploaded PDF...")
 
 if user_query:
@@ -46,12 +46,12 @@ if user_query:
 
     st.chat_message("assistant").write(response)
 
-    # ✅ Save chat
+    # Save chat
     st.session_state.chat_history.append({
         "user": user_query,
         "assistant": response
     })
 
-# ✅ Clear chat button
+# ✅ Clear chat
 if st.button("🗑 Clear Chat"):
     st.session_state.chat_history = []

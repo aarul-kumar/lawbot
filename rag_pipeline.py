@@ -13,10 +13,10 @@ def get_llm():
 
     if llm_model is None:
         pipe = pipeline(
-            "text2text-generation",              # ✅ stable task
-            model="google/flan-t5-base",         # ✅ best for Streamlit
-            max_new_tokens=256,
-            do_sample=False                      # ✅ prevents crash
+            "text2text-generation",              # ✅ correct task
+            model="google/flan-t5-base",         # ✅ stable + good quality
+            max_new_tokens=100,                  # ✅ limit output
+            do_sample=False                      # ✅ no randomness
         )
 
         llm_model = HuggingFacePipeline(pipeline=pipe)
@@ -31,22 +31,25 @@ def retrieve_docs(query, k=3):
 
 
 def get_context(documents):
-    # ✅ limit size to avoid memory crash
+    # ✅ limit context size (prevents crashes)
     return "\n\n".join([doc.page_content[:500] for doc in documents])
 
 
+# ✅ IMPROVED PROMPT
 custom_prompt_template = """
 You are a helpful legal assistant.
 
-Use ONLY the information provided in the context below.
-If the answer is not present, say:
-"I don't know based on the provided document."
+Answer the question ONLY using the given context.
+Give a short and precise answer (1-2 sentences).
 
-Question:
-{question}
+If the answer is not in the context, say:
+"I don't know based on the provided document."
 
 Context:
 {context}
+
+Question:
+{question}
 
 Answer:
 """
@@ -64,5 +67,12 @@ def answer_query(documents, query):
         "context": context
     })
 
-    # ✅ clean output
-    return str(response).strip()
+    # ✅ CLEAN OUTPUT (VERY IMPORTANT)
+    output = str(response)
+
+    if "Answer:" in output:
+        output = output.split("Answer:")[-1]
+
+    output = output.strip().replace("\n", " ")
+
+    return output[:300]  # limit length
