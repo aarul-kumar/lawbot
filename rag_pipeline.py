@@ -6,18 +6,22 @@ from langchain_community.llms import HuggingFacePipeline
 from langchain_core.prompts import ChatPromptTemplate
 from vector_database import load_vector_store
 
-llm_model = None  # global cache
+llm_model = None  # cache model
 
 
 def get_llm():
     global llm_model
 
     if llm_model is None:
+        # ✅ Use supported task + lightweight model
         pipe = pipeline(
-            "text2text-generation",
-            model="google/flan-t5-base",
-            max_new_tokens=256
+            "text-generation",
+            model="distilgpt2",
+            max_new_tokens=200,
+            do_sample=True,
+            temperature=0.7
         )
+
         llm_model = HuggingFacePipeline(pipeline=pipe)
 
     return llm_model
