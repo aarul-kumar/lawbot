@@ -7,8 +7,8 @@ from vector_database import (
 )
 from rag_pipeline import answer_query, retrieve_docs
 
-st.set_page_config(page_title="LawBot RAG", layout="wide")
-st.title("⚖️ LawBot - AI Legal Assistant")
+st.set_page_config(page_title="LawBot", layout="wide")
+st.title("⚖️ LawBot - RAG + LLM + AI Legal Aid")
 
 # ✅ Chat history
 if "chat_history" not in st.session_state:
