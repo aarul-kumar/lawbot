@@ -1,15 +1,15 @@
 import os
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_ollama import OllamaEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # Directories
 PDFS_DIRECTORY = "pdfs/"
 FAISS_DB_PATH = "vectorstore/db_faiss"
 
-# IMPORTANT: Use embedding model (not LLM)
-EMBEDDING_MODEL_NAME = "nomic-embed-text"
+# Use HuggingFace embedding model (cloud-compatible)
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 def upload_pdf(file):
@@ -40,7 +40,9 @@ def create_chunks(documents):
 
 
 def get_embedding_model():
-    return OllamaEmbeddings(model=EMBEDDING_MODEL_NAME)
+    return HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL_NAME
+    )
 
 
 def create_vector_store(text_chunks):

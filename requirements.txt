@@ -2,4 +2,5 @@ streamlit
 langchain
 langchain-community
 pdfplumber
-langchain-ollama
+faiss-cpu
+sentence-transformers
