@@ -8,7 +8,7 @@ from vector_database import (
 from rag_pipeline import answer_query, retrieve_docs
 
 st.set_page_config(page_title="LawBot RAG", layout="wide")
-st.title("⚖️ LawBot - AI Legal Assistant")
+st.title("⚖️ LawBot - RAG + LLM + AI Legal Aid")
 
 uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
 
