@@ -10,9 +10,11 @@ from rag_pipeline import answer_query, retrieve_docs
 st.set_page_config(page_title="LawBot RAG", layout="wide")
 st.title("⚖️ LawBot - RAG + LLM + AI Legal Aid")
 
+# -----------------------------
+# PDF upload
+# -----------------------------
 uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
 
-# Process PDF
 if uploaded_file:
     with st.spinner("Processing PDF and creating embeddings..."):
         file_path = upload_pdf(uploaded_file)
@@ -21,7 +23,9 @@ if uploaded_file:
         create_vector_store(chunks)
     st.success("✅ PDF processed successfully!")
 
-# User input
+# -----------------------------
+# User query input
+# -----------------------------
 user_query = st.text_area(
     "Enter your question:",
     height=150,
@@ -30,17 +34,23 @@ user_query = st.text_area(
 
 ask_question = st.button("Ask LawBot")
 
+# -----------------------------
+# Handle question submission
+# -----------------------------
 if ask_question:
     if uploaded_file and user_query.strip() != "":
+        # Display only the user question
         st.chat_message("user").write(user_query)
 
         with st.spinner("Thinking..."):
+            # Retrieve relevant docs and generate response
             retrieved_docs = retrieve_docs(user_query)
             response = answer_query(
                 documents=retrieved_docs,
                 query=user_query
             )
 
+        # Display only the assistant's answer
         st.chat_message("assistant").write(response)
 
     else:

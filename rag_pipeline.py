@@ -8,42 +8,43 @@ from vector_database import load_vector_store
 
 llm_model = None  # cache model
 
-
+# -----------------------------
+# Get LLM (instruction-following)
+# -----------------------------
 def get_llm():
     global llm_model
 
     if llm_model is None:
-        # ✅ Use supported task + lightweight model
         pipe = pipeline(
             "text-generation",
-            model="distilgpt2",
+            model="distilgpt2",  # replace with a stronger instruction-following model if possible
             max_new_tokens=200,
             do_sample=True,
-            temperature=0.7
+            temperature=0.3
         )
-
         llm_model = HuggingFacePipeline(pipeline=pipe)
 
     return llm_model
 
-
-def retrieve_docs(query, k=3):
+# -----------------------------
+# Retrieve most relevant documents
+# -----------------------------
+def retrieve_docs(query, k=1):  # Only top chunk to keep context short
     vector_store = load_vector_store()
     return vector_store.similarity_search(query, k=k)
 
-
+# -----------------------------
+# Combine chunks into context string
+# -----------------------------
 def get_context(documents):
     return "\n\n".join([doc.page_content for doc in documents])
 
-
+# -----------------------------
+# Prompt template
+# -----------------------------
 custom_prompt_template = """
-You are a helpful legal assistant.
-
-Use ONLY the information provided in the context below to answer the user's question.
-If the answer is not present in the context, say:
-"I don't know based on the provided document."
-
-Do NOT make up information.
+Answer the user's question using ONLY the information in the context below.
+If the answer is not present in the context, respond: "I don't know based on the provided document."
 
 Question:
 {question}
@@ -54,7 +55,9 @@ Context:
 Answer:
 """
 
-
+# -----------------------------
+# Generate response
+# -----------------------------
 def answer_query(documents, query):
     model = get_llm()
     context = get_context(documents)
@@ -67,4 +70,5 @@ def answer_query(documents, query):
         "context": context
     })
 
-    return response
+    # Clean up any stray newlines
+    return response.strip()
