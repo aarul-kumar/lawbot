@@ -1,14 +1,13 @@
 import os
+import streamlit as st
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-# Directories
 PDFS_DIRECTORY = "pdfs/"
 FAISS_DB_PATH = "vectorstore/db_faiss"
 
-# HuggingFace embedding model
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
@@ -32,14 +31,15 @@ def load_pdf(file_path):
 def create_chunks(documents):
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
-        chunk_overlap=200,
-        add_start_index=True
+        chunk_overlap=200
     )
     return text_splitter.split_documents(documents)
 
 
 def get_embedding_model():
-    return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
+    return HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL_NAME
+    )
 
 
 def create_vector_store(text_chunks):
@@ -53,7 +53,11 @@ def create_vector_store(text_chunks):
     return vector_store
 
 
+@st.cache_resource
 def load_vector_store():
+    if not os.path.exists(FAISS_DB_PATH):
+        raise ValueError("⚠ No vector database found. Upload a PDF first.")
+
     embeddings = get_embedding_model()
     return FAISS.load_local(
         FAISS_DB_PATH,

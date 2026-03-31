@@ -6,14 +6,21 @@ from langchain_community.llms import HuggingFacePipeline
 from langchain_core.prompts import ChatPromptTemplate
 from vector_database import load_vector_store
 
-# Load lightweight HF model (works on Streamlit)
-pipe = pipeline(
-    "text2text-generation",
-    model="google/flan-t5-base",
-    max_new_tokens=256
-)
+llm_model = None  # global cache
 
-llm_model = HuggingFacePipeline(pipeline=pipe)
+
+def get_llm():
+    global llm_model
+
+    if llm_model is None:
+        pipe = pipeline(
+            "text2text-generation",
+            model="google/flan-t5-base",
+            max_new_tokens=256
+        )
+        llm_model = HuggingFacePipeline(pipeline=pipe)
+
+    return llm_model
 
 
 def retrieve_docs(query, k=3):
@@ -44,7 +51,8 @@ Answer:
 """
 
 
-def answer_query(documents, model, query):
+def answer_query(documents, query):
+    model = get_llm()
     context = get_context(documents)
 
     prompt = ChatPromptTemplate.from_template(custom_prompt_template)
@@ -55,4 +63,4 @@ def answer_query(documents, model, query):
         "context": context
     })
 
-    return response  # returns string
+    return response

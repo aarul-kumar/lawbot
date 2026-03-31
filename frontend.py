@@ -5,14 +5,14 @@ from vector_database import (
     create_chunks,
     create_vector_store
 )
-from rag_pipeline import answer_query, retrieve_docs, llm_model
+from rag_pipeline import answer_query, retrieve_docs
 
 st.set_page_config(page_title="LawBot RAG", layout="wide")
-st.title("LawBot - RAG + LLM + AI Legal Aid")
+st.title("⚖️ LawBot - AI Legal Assistant")
 
 uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
 
-# Process PDF only once
+# Process PDF
 if uploaded_file:
     with st.spinner("Processing PDF and creating embeddings..."):
         file_path = upload_pdf(uploaded_file)
@@ -38,7 +38,6 @@ if ask_question:
             retrieved_docs = retrieve_docs(user_query)
             response = answer_query(
                 documents=retrieved_docs,
-                model=llm_model,
                 query=user_query
             )
 
