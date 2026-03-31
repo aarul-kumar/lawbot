@@ -2,3 +2,4 @@ streamlit
 langchain
 langchain-community
 pdfplumber
+langchain-ollama
