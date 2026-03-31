@@ -10,9 +10,13 @@ from rag_pipeline import answer_query, retrieve_docs
 st.set_page_config(page_title="LawBot RAG", layout="wide")
 st.title("⚖️ LawBot - AI Legal Assistant")
 
+# ✅ Chat history memory
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+# Upload PDF
 uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
 
-# Process PDF
 if uploaded_file:
     with st.spinner("Processing PDF and creating embeddings..."):
         file_path = upload_pdf(uploaded_file)
@@ -21,27 +25,33 @@ if uploaded_file:
         create_vector_store(chunks)
     st.success("✅ PDF processed successfully!")
 
-# User input
-user_query = st.text_area(
-    "Enter your question:",
-    height=150,
-    placeholder="Ask anything from the uploaded PDF..."
-)
+# ✅ Display chat history
+for chat in st.session_state.chat_history:
+    st.chat_message("user").write(chat["user"])
+    st.chat_message("assistant").write(chat["assistant"])
 
-ask_question = st.button("Ask LawBot")
+# ✅ ChatGPT-style input
+user_query = st.chat_input("Ask anything from the uploaded PDF...")
 
-if ask_question:
-    if uploaded_file and user_query.strip() != "":
-        st.chat_message("user").write(user_query)
+if user_query:
+    st.chat_message("user").write(user_query)
 
-        with st.spinner("Thinking..."):
-            retrieved_docs = retrieve_docs(user_query)
-            response = answer_query(
-                documents=retrieved_docs,
-                query=user_query
-            )
+    with st.spinner("Thinking..."):
+        retrieved_docs = retrieve_docs(user_query)
 
-        st.chat_message("assistant").write(response)
+        response = answer_query(
+            documents=retrieved_docs,
+            query=user_query
+        )
 
-    else:
-        st.error("⚠ Please upload a PDF and enter a question.")
+    st.chat_message("assistant").write(response)
+
+    # ✅ Save chat
+    st.session_state.chat_history.append({
+        "user": user_query,
+        "assistant": response
+    })
+
+# ✅ Clear chat button
+if st.button("🗑 Clear Chat"):
+    st.session_state.chat_history = []

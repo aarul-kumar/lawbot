@@ -4,7 +4,6 @@ load_dotenv()
 from transformers import pipeline
 from langchain_community.llms import HuggingFacePipeline
 from langchain_core.prompts import ChatPromptTemplate
-from vector_database import load_vector_store
 
 llm_model = None  # cache model
 
@@ -13,13 +12,11 @@ def get_llm():
     global llm_model
 
     if llm_model is None:
-        # ✅ Use supported task + lightweight model
         pipe = pipeline(
-            "text-generation",
-            model="distilgpt2",
-            max_new_tokens=200,
-            do_sample=True,
-            temperature=0.7
+            "text2text-generation",              # ✅ stable task
+            model="google/flan-t5-base",         # ✅ best for Streamlit
+            max_new_tokens=256,
+            do_sample=False                      # ✅ prevents crash
         )
 
         llm_model = HuggingFacePipeline(pipeline=pipe)
@@ -28,22 +25,22 @@ def get_llm():
 
 
 def retrieve_docs(query, k=3):
+    from vector_database import load_vector_store  # lazy import
     vector_store = load_vector_store()
     return vector_store.similarity_search(query, k=k)
 
 
 def get_context(documents):
-    return "\n\n".join([doc.page_content for doc in documents])
+    # ✅ limit size to avoid memory crash
+    return "\n\n".join([doc.page_content[:500] for doc in documents])
 
 
 custom_prompt_template = """
 You are a helpful legal assistant.
 
-Use ONLY the information provided in the context below to answer the user's question.
-If the answer is not present in the context, say:
+Use ONLY the information provided in the context below.
+If the answer is not present, say:
 "I don't know based on the provided document."
-
-Do NOT make up information.
 
 Question:
 {question}
@@ -67,4 +64,5 @@ def answer_query(documents, query):
         "context": context
     })
 
-    return response
+    # ✅ clean output
+    return str(response).strip()
