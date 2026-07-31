@@ -1,4 +1,5 @@
 import os
+import re
 import streamlit as st
 from langchain.document_loaders import PDFPlumberLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,12 +12,33 @@ FAISS_DB_PATH = "vectorstore/db_faiss"
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
+def _sanitize_filename(filename):
+    """Reject path traversal and other unsafe upload names before writing to disk."""
+    if not filename or not isinstance(filename, str):
+        raise ValueError("Invalid filename provided for upload.")
+
+    if os.path.isabs(filename) or "/" in filename or "\\" in filename:
+        raise ValueError("Upload filename must not contain path separators.")
+
+    basename = os.path.basename(filename)
+    if basename in {"", ".", ".."}:
+        raise ValueError("Upload filename is invalid.")
+
+    if basename != filename:
+        raise ValueError("Upload filename must not contain a path.")
+
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", basename):
+        raise ValueError("Upload filename contains unsupported characters.")
+
+    return basename
+
+
 def upload_pdf(file):
     """Save uploaded file to PDFs directory and return saved path."""
-    if not os.path.exists(PDFS_DIRECTORY):
-        os.makedirs(PDFS_DIRECTORY)
+    os.makedirs(PDFS_DIRECTORY, exist_ok=True)
 
-    file_path = os.path.join(PDFS_DIRECTORY, file.name)
+    safe_name = _sanitize_filename(file.name)
+    file_path = os.path.join(PDFS_DIRECTORY, safe_name)
 
     with open(file_path, "wb") as f:
         f.write(file.getbuffer())
@@ -63,4 +85,4 @@ def load_vector_store():
         raise ValueError("⚠ No vector database found. Upload a PDF first or create a vectorstore.")
 
     embeddings = get_embedding_model()
-    return FAISS.load_local(FAISS_DB_PATH, embeddings)
+    return FAISS.load_local(FAISS_DB_PATH, embeddings, allow_dangerous_deserialization=True)
