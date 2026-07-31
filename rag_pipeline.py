@@ -2,73 +2,69 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from transformers import pipeline
-from langchain_community.llms import HuggingFacePipeline
-from langchain_core.prompts import ChatPromptTemplate
+import os
+import logging
 from vector_database import load_vector_store
 
-llm_model = None  # cache model
+logging.basicConfig(level=logging.INFO)
 
-# -----------------------------
-# Get LLM (instruction-following)
-# -----------------------------
-def get_llm():
-    global llm_model
+# Simple cached transformer pipeline (text-generation). Using a small default model for local runs.
+_llm_pipeline = None
 
-    if llm_model is None:
-        pipe = pipeline(
+
+def get_llm(model_name: str = os.getenv("LOCAL_LLM", "distilgpt2")):
+    """Return a transformers text-generation pipeline. Cached in module scope."""
+    global _llm_pipeline
+    if _llm_pipeline is None:
+        device = 0 if ("CUDA_VISIBLE_DEVICES" in os.environ and os.environ.get("CUDA_VISIBLE_DEVICES") != "") else -1
+        _llm_pipeline = pipeline(
             "text-generation",
-            model="distilgpt2",  # replace with a stronger instruction-following model if possible
-            max_new_tokens=200,
+            model=model_name,
+            device=device,
+            max_new_tokens=256,
             do_sample=True,
-            temperature=0.3
+            temperature=0.2
         )
-        llm_model = HuggingFacePipeline(pipeline=pipe)
+    return _llm_pipeline
 
-    return llm_model
 
-# -----------------------------
-# Retrieve most relevant documents
-# -----------------------------
-def retrieve_docs(query, k=1):  # Only top chunk to keep context short
-    vector_store = load_vector_store()
-    return vector_store.similarity_search(query, k=k)
+def retrieve_docs(query, k: int = 3):
+    """Retrieve top-k relevant document chunks from the vector store."""
+    vs = load_vector_store()
+    return vs.similarity_search(query, k=k)
 
-# -----------------------------
-# Combine chunks into context string
-# -----------------------------
+
 def get_context(documents):
-    return "\n\n".join([doc.page_content for doc in documents])
+    """Concatenate document chunks into a single context string."""
+    return "\n\n".join([getattr(d, "page_content", str(d)) for d in documents])
 
-# -----------------------------
-# Prompt template
-# -----------------------------
-custom_prompt_template = """
-Answer the user's question using ONLY the information in the context below.
-If the answer is not present in the context, respond: "I don't know based on the provided document."
 
-Question:
-{question}
+CUSTOM_PROMPT_TEMPLATE = (
+    "Answer the user's question using ONLY the information in the context below.\n"
+    "If the answer is not present in the context, respond exactly: I don't know based on the provided document.\n\n"
+    "Question:\n{question}\n\nContext:\n{context}\n\nAnswer:" 
+)
 
-Context:
-{context}
 
-Answer:
-"""
-
-# -----------------------------
-# Generate response
-# -----------------------------
-def answer_query(documents, query):
+def answer_query(documents, query: str) -> str:
+    """Build a strict prompt using retrieved documents and ask the local LLM pipeline for an answer."""
     model = get_llm()
     context = get_context(documents)
 
-    prompt = ChatPromptTemplate.from_template(custom_prompt_template)
-    chain = prompt | model
+    prompt_text = CUSTOM_PROMPT_TEMPLATE.format(question=query, context=context)
 
-    response = chain.invoke({
-        "question": query,
-        "context": context
-    })
+    # Call the transformers pipeline directly
+    out = model(prompt_text, max_new_tokens=256, do_sample=True, temperature=0.2)
 
-    # Clean up any stray newlines
-    return response.strip()
+    # transformers text-generation pipeline returns a list with 'generated_text'
+    generated = out[0].get("generated_text", "") if isinstance(out, list) and len(out) > 0 else str(out)
+
+    # Remove the prompt prefix if model echoes it
+    if generated.startswith(prompt_text):
+        result = generated[len(prompt_text):]
+    else:
+        # Fallback: try to strip the original prompt if present
+        result = generated.replace(prompt_text, "")
+
+    # Return a cleaned string
+    return result.strip()

@@ -30,7 +30,7 @@ The system follows a modular RAG pipeline separating document processing, retrie
 
 - PDF ingestion and text extraction
 - Recursive chunking with overlap for better semantic retrieval
-- Embedding generation using Ollama
+- Embedding generation using sentence-transformers (local)
 - FAISS-based vector similarity search
 - Configurable LLM backend (Local or Groq API)
 - Strict prompt design to prevent hallucinated responses
@@ -63,9 +63,9 @@ The system follows a modular RAG pipeline separating document processing, retrie
 | Frontend | Streamlit |
 | Orchestration | LangChain |
 | Vector Store | FAISS |
-| Embeddings | Ollama (`nomic-embed-text`) |
-| Local LLM | Ollama (`deepseek-r1:1.5b`) |
-| Cloud LLM | Groq API (`llama-3.3-70b-versatile`) |
+| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`) |
+| Local LLM | HuggingFace / transformers (configurable pipeline, default: distilgpt2) |
+| Cloud LLM | Optional: configure Groq or other cloud LLMs in rag_pipeline.py |
 | PDF Loader | PDFPlumber |
 
 ---
@@ -114,19 +114,17 @@ source venv/bin/activate
 
 ### 3. Install Dependencies
 
-Create `requirements.txt`:
+Create `requirements.txt` with the following (the repo already contains a `requirements.txt` example):
 
 ```
 streamlit
 python-dotenv
 langchain
-langchain-community
-langchain-core
-langchain-ollama
-langchain-text-splitters
 faiss-cpu
+sentence-transformers
+transformers
+torch
 pdfplumber
-langchain-groq
 ```
 
 Install dependencies:
@@ -135,33 +133,23 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-### 4. Local LLM Setup (Ollama)
+### 4. Local LLM Setup
 
-Install Ollama from:
+This project is configured to work fully locally using HuggingFace transformers pipelines. By default the code uses `distilgpt2` for the text-generation pipeline as a lightweight example. For better instruction-following models, set the environment variable `LOCAL_LLM` to a different model name (for example `bigscience/bloomz-1b1` or another model you have locally).
 
-https://ollama.com/download
+You do not need Ollama to run the default local flow.
 
-Pull required models:
+### 5. Optional: Cloud LLM Setup (Groq or others)
 
-```bash
-ollama pull deepseek-r1:1.5b
-ollama pull nomic-embed-text
-```
+If you want to use a cloud LLM backend instead of the local transformers pipeline, modify `rag_pipeline.py` to call your cloud LLM client. Example placeholder (update with your provider's SDK):
 
-### 5. Cloud LLM Setup (Groq)
-
-1. Create a `.env` file:
+1. Create a `.env` file with provider credentials, e.g.:
 
 ```
 GROQ_API_KEY=your_api_key_here
 ```
 
-2. In `rag_pipeline.py`, enable Groq:
-
-```python
-from langchain_groq import ChatGroq
-llm_model = ChatGroq(model="llama-3.3-70b-versatile")
-```
+2. Edit `rag_pipeline.py` to initialize and call the cloud LLM client instead of the local pipeline. The code is deliberately simple so it is easy to swap the LLM backend.
 
 ---
 

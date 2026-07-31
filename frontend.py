@@ -3,7 +3,8 @@ from vector_database import (
     upload_pdf,
     load_pdf,
     create_chunks,
-    create_vector_store
+    create_vector_store,
+    load_vector_store,
 )
 from rag_pipeline import answer_query, retrieve_docs
 
@@ -38,20 +39,33 @@ ask_question = st.button("Ask LawBot")
 # Handle question submission
 # -----------------------------
 if ask_question:
-    if uploaded_file and user_query.strip() != "":
-        # Display only the user question
-        st.chat_message("user").write(user_query)
-
-        with st.spinner("Thinking..."):
-            # Retrieve relevant docs and generate response
-            retrieved_docs = retrieve_docs(user_query)
-            response = answer_query(
-                documents=retrieved_docs,
-                query=user_query
-            )
-
-        # Display only the assistant's answer
-        st.chat_message("assistant").write(response)
-
+    if user_query.strip() == "":
+        st.error("⚠ Please enter a question.")
     else:
-        st.error("⚠ Please upload a PDF and enter a question.")
+        # Ensure a vectorstore exists (either just created or persisted on disk)
+        try:
+            vs = load_vector_store()
+        except Exception as e:
+            st.error("⚠ No vector database found. Upload a PDF first to create embeddings.")
+            st.write(e)
+        else:
+            # Display only the user question
+            try:
+                st.chat_message("user").write(user_query)
+            except Exception:
+                # Older streamlit versions may not have chat components
+                st.write("User:", user_query)
+
+            with st.spinner("Thinking..."):
+                # Retrieve relevant docs and generate response
+                retrieved_docs = retrieve_docs(user_query)
+                response = answer_query(
+                    documents=retrieved_docs,
+                    query=user_query
+                )
+
+            # Display only the assistant's answer
+            try:
+                st.chat_message("assistant").write(response)
+            except Exception:
+                st.write("LawBot:", response)
