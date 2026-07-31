@@ -1,9 +1,15 @@
 streamlit
 langchain
 langchain-community
+langchain-text-splitters
+langchain-core
 pdfplumber
 faiss-cpu
 sentence-transformers
 transformers
 torch
 python-dotenv
+requests
+pytest
+pdf2image
+pytesseract

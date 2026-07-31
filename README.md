@@ -1,182 +1,104 @@
-# LawBot – RAG + LLM + AI Legal Aid
+# LawBot – Indian Legal AI Assistant
 
-LawBot is a Retrieval-Augmented Generation (RAG) based AI Legal Assistant designed to provide context-grounded answers from uploaded legal PDF documents. The system ensures responses are strictly derived from document content, minimizing hallucinations and improving reliability for legal research and analysis.
+LawBot is a locally runnable, evidence-first legal assistant designed for Indian legal research and legal-document understanding. It combines PDF ingestion, semantic retrieval, a lightweight legal knowledge layer, and an accessible Streamlit frontend to help users ask grounded questions about uploaded legal documents and general Indian legal topics.
 
-The architecture supports both local and cloud-based large language models, making it flexible for development, experimentation, and deployment.
+The project is intentionally modular and portfolio-friendly: it preserves a simple local-first workflow while layering in modern UX, better retrieval behaviour, clearer citations, and responsible legal guidance.
 
----
+## What the app does
 
-## Overview
+- Uploads and processes legal PDFs locally
+- Builds a FAISS vector index over PDF content
+- Retrieves relevant document chunks with semantic + keyword overlap scoring
+- Produces grounded answers with source/citation-style references
+- Adds a lightweight Indian-law knowledge layer for constitutional concepts and criminal-law transition guidance
+- Offers an optional web-search integration hook (when an API key is configured)
+- Presents a more polished Streamlit experience with better navigation and chat history
 
-LawBot enables users to:
+## Architecture
 
-- Upload legal documents (acts, case files, contracts, policies, etc.)
-- Perform semantic search over document content
-- Generate context-aware answers using a configurable LLM backend
-- Operate fully offline using local models or leverage a cloud LLM via API
+- Frontend: Streamlit
+- PDF ingestion: PDFPlumber with OCR fallback (best effort)
+- Embeddings: sentence-transformers (`all-MiniLM-L6-v2`)
+- Vector store: FAISS
+- LLM: HuggingFace transformers pipeline (local-first, configurable via `LOCAL_LLM`)
+- Knowledge layer: curated legal knowledge module for Indian law concepts
 
-The system follows a modular RAG pipeline separating document processing, retrieval, and generation layers.
+## Project structure
 
----
-
-## System Architecture
-
-<img width="1726" height="2543" alt="Flowchart" src="https://github.com/user-attachments/assets/557569e6-3006-40f5-b33b-e6f7789c85f1" />
-
-
----
-
-## Core Features
-
-- PDF ingestion and text extraction
-- Recursive chunking with overlap for better semantic retrieval
-- Embedding generation using sentence-transformers (local)
-- FAISS-based vector similarity search
-- Configurable LLM backend (Local or Groq API)
-- Strict prompt design to prevent hallucinated responses
-- Persistent local vector storage
-
----
-
-## System Workflow
-
-### Document Processing Phase
-1. Upload PDF document.
-2. Extract text using PDFPlumber.
-3. Split text into overlapping chunks.
-4. Generate embeddings using `nomic-embed-text`.
-5. Store embeddings in a FAISS vector index.
-
-### Query Processing Phase
-1. User submits a question.
-2. FAISS performs Top-K similarity retrieval.
-3. Retrieved chunks are aggregated as context.
-4. Context is injected into a structured prompt.
-5. Selected LLM generates a grounded response.
-
----
-
-## Technology Stack
-
-| Layer | Technology |
-|--------|------------|
-| Frontend | Streamlit |
-| Orchestration | LangChain |
-| Vector Store | FAISS |
-| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`) |
-| Local LLM | HuggingFace / transformers (configurable pipeline, default: distilgpt2) |
-| Cloud LLM | Optional: configure Groq or other cloud LLMs in rag_pipeline.py |
-| PDF Loader | PDFPlumber |
-
----
-
-## Project Structure
-
-```
+```text
 LawBot/
-│
-├── frontend.py           # Streamlit application
-├── rag_pipeline.py       # Retrieval and LLM integration
-├── vector_database.py    # PDF processing and FAISS management
-├── requirements.txt
-├── pdfs/                 # Uploaded documents
-└── vectorstore/          # Persisted FAISS index
+├── frontend.py            # Streamlit UI and navigation
+├── rag_pipeline.py        # Retrieval, reranking, prompt assembly, and answers
+├── vector_database.py     # PDF upload, text extraction, chunking, FAISS persistence
+├── legal_knowledge.py     # Lightweight Indian legal knowledge layer
+├── web_search.py          # Optional web-search integration hook
+├── requirements.txt       # Python dependencies
+├── pdfs/                  # Uploaded PDFs
+├── vectorstore/           # FAISS index and document metadata
+├── eval/                  # Evaluation dataset and runner
+└── tests/                 # Unit tests
 ```
-
----
 
 ## Installation
 
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd LawBot
-```
-
-### 2. Create Virtual Environment
+1. Create and activate a virtual environment
 
 ```bash
 python -m venv venv
-```
-
-Activate the environment:
-
-Windows:
-```bash
 venv\Scripts\activate
 ```
 
-Mac/Linux:
-```bash
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-Create `requirements.txt` with the following (the repo already contains a `requirements.txt` example):
-
-```
-streamlit
-python-dotenv
-langchain
-faiss-cpu
-sentence-transformers
-transformers
-torch
-pdfplumber
-```
-
-Install dependencies:
+2. Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Local LLM Setup
+3. Copy the sample environment file and edit it if needed
 
-This project is configured to work fully locally using HuggingFace transformers pipelines. By default the code uses `distilgpt2` for the text-generation pipeline as a lightweight example. For better instruction-following models, set the environment variable `LOCAL_LLM` to a different model name (for example `bigscience/bloomz-1b1` or another model you have locally).
-
-You do not need Ollama to run the default local flow.
-
-### 5. Optional: Cloud LLM Setup (Groq or others)
-
-If you want to use a cloud LLM backend instead of the local transformers pipeline, modify `rag_pipeline.py` to call your cloud LLM client. Example placeholder (update with your provider's SDK):
-
-1. Create a `.env` file with provider credentials, e.g.:
-
-```
-GROQ_API_KEY=your_api_key_here
+```bash
+copy .env.example .env
 ```
 
-2. Edit `rag_pipeline.py` to initialize and call the cloud LLM client instead of the local pipeline. The code is deliberately simple so it is easy to swap the LLM backend.
+Optional values:
 
----
+```text
+LOCAL_LLM=distilgpt2
+SERPER_API_KEY=
+```
 
-## Running the Application
+## Running the app
 
 ```bash
 streamlit run frontend.py
 ```
 
-Access the application at:
+Open http://localhost:8501 in your browser.
 
-```
-http://localhost:8501
-```
+## Usage notes
 
----
+- Upload a PDF first to build or refresh the vector index.
+- Ask questions that relate to the uploaded document or general Indian legal topics.
+- Answers are evidence-first and should be treated as educational legal information, not professional legal advice.
+- For serious criminal, constitutional, financial, urgent, or court-related matters, consult a qualified legal professional.
 
-## Reliability and Hallucination Control
+## Testing
 
-The prompt design enforces:
+Run the unit tests:
 
-- Strict use of provided context
-- No fabricated legal information
-- A fallback response:
-
-```
-"I don't know based on the provided document."
+```bash
+pytest -q
 ```
 
-This ensures document-grounded, reliable outputs suitable for legal assistance workflows.
+Run the small evaluation harness:
+
+```bash
+eval\run_eval.py
+```
+
+## Limitations
+
+- The default local model (`distilgpt2`) is intentionally lightweight for quick local use; stronger instruction-tuned models will improve answer quality.
+- OCR fallback is best effort and depends on `pdf2image` and `pytesseract` being available.
+- Web research is optional and only works when a supported API key is configured.
+- The assistant should be used as a legal-learning aid, not a replacement for a qualified advocate.

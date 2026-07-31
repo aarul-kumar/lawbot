@@ -1,0 +1,17 @@
+[
+  {
+    "id": "constitution-rights",
+    "question": "What are fundamental rights in the Constitution of India?",
+    "expected_keywords": ["fundamental rights", "constitution"]
+  },
+  {
+    "id": "criminal-transition",
+    "question": "How are the old criminal laws related to the new BNS, BNSS, and BSA?",
+    "expected_keywords": ["bns", "bnss", "bsa"]
+  },
+  {
+    "id": "grievance-workflow",
+    "question": "How can I draft a grievance or legal notice outline?",
+    "expected_keywords": ["grievance", "notice"]
+  }
+]
